@@ -43,11 +43,11 @@ Estos archivos se subirán a una base de datos configurada en una Raspberry Pi p
 El sistema estará centrado en la parte superior del marco de las puertas con dos módulos, izquierdo y derecho. El lado derecho siempre se ubicará en la parte exterior y el izquierdo en la parte interior, ambos centrados en la mitad de la puerta. Junto a ellos, habrá una caja que contendrá la instalación del Arduino con sus respectivas conexiones eléctricas.
 
 - **Modelo de Una Puerta:**
-  ![Diagrama de Conexiones - Una Puerta](./diagrams/Sheet_1.png)
+  ![Diagrama de Conexiones - Una Puerta](Sheet_1.png)
   
 - **Modelo de Dos Puertas:**
-  ![Diagrama de Conexiones - Dos Puertas](./diagrams/Sheet_2.png)
-
+  ![Diagrama de Conexiones - Dos Puertas](Sheet_2.png)
+  
 ### Alimentación del Arduino
 
 El Arduino R4 WiFi deberá estar alimentado mediante una fuente de alimentación externa adecuada para asegurar un funcionamiento continuo y estable.
