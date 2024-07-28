@@ -17,7 +17,7 @@ Este proyecto tiene como objetivo registrar el ingreso y egreso en las salas de 
 
 ### Funcionamiento del Sistema
 
-Para diferenciar el ingreso del egreso, se define el estado de actividad para cada sensor. Cuando ocurre una perturbación dentro de un margen de error de cinco centímetros, se determina si fue un ingreso o egreso dependiendo de la dirección del cambio:
+Para diferenciar el ingreso del egreso, se define el estado de actividad para cada sensor. Cuando ocurre una perturbación dentro de un umbral especifico según la distancia de la instalación, junto con un margen de error de cinco centímetros, se determina si fue un ingreso o egreso dependiendo de la dirección del cambio:
 
 - **Ingreso:** De derecha a izquierda.
 - **Egreso:** De izquierda a derecha.
