@@ -50,7 +50,7 @@ El sistema estará centrado en la parte superior del marco de las puertas con do
   
 ### Diseño de Modulos de Puerta
 
-<img src="<utfsm-contador-aforo-diagrama-conexiones.pdf" alt="Diseño de los elementos en la puerta" style="transform: rotate(-90deg);">
+<img src="<utfsm-contador-aforo-diagrama-conexiones.png" alt="Diseño de los elementos en la puerta" style="transform: rotate(-90deg);">
 
 ### Alimentación del Arduino
 
