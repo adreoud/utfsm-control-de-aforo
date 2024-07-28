@@ -48,6 +48,10 @@ El sistema estará centrado en la parte superior del marco de las puertas con do
 - **Modelo de Dos Puertas:**
   ![Diagrama de Conexiones - Dos Puertas](Sheet_2.png)
   
+### Diseño de Modulos de Puerta
+
+<img src="<utfsm-contador-aforo-diagrama-conexiones.pdf" alt="Diseño de los elementos en la puerta" style="transform: rotate(-90deg);">
+
 ### Alimentación del Arduino
 
 El Arduino R4 WiFi deberá estar alimentado mediante una fuente de alimentación externa adecuada para asegurar un funcionamiento continuo y estable.
