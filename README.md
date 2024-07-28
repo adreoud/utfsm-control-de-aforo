@@ -48,10 +48,9 @@ El sistema estará centrado en la parte superior del marco de las puertas con do
 - **Modelo de Dos Puertas:**
   ![Diagrama de Conexiones - Dos Puertas](Sheet_2.png)
   
-### Diseño de Modulos de Puerta
+### Diseño de Módulos de Puerta
 
 <img src="utfsm-contador-aforo-diagrama-modulos.png" alt="Diseño de los elementos en la puerta" style="transform: rotate(-90deg);">
-
 
 ### Alimentación del Arduino
 
@@ -67,9 +66,9 @@ En este método, se utiliza una fuente de alimentación directa regulada para pr
 - Conectores de alimentación compatibles.
 
 **Conexión:**
-1. **Fuente de Alimentación**: Conecta una fuente de alimentación DC regulada con un voltaje entre 7V y 12V al pin de entrada de voltaje (Vin) del Arduino R4 WiFi.
+1. **Fuente de Alimentación:** Conecta una fuente de alimentación DC regulada con un voltaje entre 7V y 12V al pin de entrada de voltaje (Vin) del Arduino R4 WiFi.
 2. **Regulador de Voltaje** (si es necesario): Si la fuente de alimentación no está regulada, utiliza un regulador de voltaje para asegurar que el Arduino reciba una tensión estable.
-3. **GND**: Conecta el terminal negativo (GND) de la fuente de alimentación al pin GND del Arduino.
+3. **GND:** Conecta el terminal negativo (GND) de la fuente de alimentación al pin GND del Arduino.
 
 #### Método 2: Adaptador de Corriente
 
@@ -79,14 +78,14 @@ Usar un adaptador de corriente (wall adapter) es una opción conveniente y segur
 - Adaptador de corriente compatible (9V a 12V, con conector de 2.1mm centro positivo).
 
 **Conexión:**
-1. **Adaptador de Corriente**: Inserta el conector del adaptador de corriente en el puerto de alimentación del Arduino (jack DC).
-2. **Verificación de Polaridad**: Asegúrate de que el adaptador de corriente tiene la polaridad correcta (centro positivo).
+1. **Adaptador de Corriente:** Inserta el conector del adaptador de corriente en el puerto de alimentación del Arduino (jack DC).
+2. **Verificación de Polaridad:** Asegúrate de que el adaptador de corriente tiene la polaridad correcta (centro positivo).
 
-### Consideraciones Adicionales:
+### Consideraciones Adicionales
 
-- **Protección contra Sobrecorriente**: Utiliza un fusible o un limitador de corriente para proteger el Arduino y otros componentes del circuito contra sobrecorrientes.
-- **Estabilidad de la Fuente de Alimentación**: Asegúrate de que la fuente de alimentación o el adaptador proporcionen un voltaje estable y suficiente corriente para todos los componentes conectados al Arduino.
-- **Longitud del Cable**: Minimiza la longitud del cable entre la fuente de alimentación y el Arduino para reducir la caída de voltaje y posibles interferencias.
+- **Protección contra Sobrecorriente:** Utiliza un fusible o un limitador de corriente para proteger el Arduino y otros componentes del circuito contra sobrecorrientes.
+- **Estabilidad de la Fuente de Alimentación:** Asegúrate de que la fuente de alimentación o el adaptador proporcionen un voltaje estable y suficiente corriente para todos los componentes conectados al Arduino.
+- **Longitud del Cable:** Minimiza la longitud del cable entre la fuente de alimentación y el Arduino para reducir la caída de voltaje y posibles interferencias.
 
 ### Restricciones y Delimitaciones
 
