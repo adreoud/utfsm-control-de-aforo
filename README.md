@@ -1,4 +1,4 @@
-# Proyecto Control de Aforo - Universidad Técnica Federico Santa María
+# Proyecto Control de Aforo - Universidad Técnica Federico Santa María [Dirección General]
 
 **Ingeniería Civil Telemática**
 
