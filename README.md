@@ -13,7 +13,74 @@
 
 ## Descripción del Proyecto
 
-Este proyecto tiene como objetivo registrar el ingreso y egreso en las salas de clase de los edificios del campus de la Universidad Técnica Federico Santa María utilizando una placa Arduino R4 WiFi. Se empleará un datalogger SD para almacenar los datos de los registros obtenidos mediante dos sensores ultrasónicos HC-SR04, diferenciados como "izquierdo" y "derecho", para cada entrada identificada como "Entrada A" y "Entrada B". 
+Este proyecto tiene como objetivo registrar el ingreso y egreso en las salas de clase de los edificios del campus de la Universidad Técnica Federico Santa María utilizando una placa Arduino R4 WiFi. Se empleará un datalogger SD para almacenar los datos de los registros obtenidos mediante dos sensores ultrasónicos HC-SR04, diferenciados como "izquierdo" y "derecho", para cada entrada identificada como "Entrada A" y "Entrada B".
+
+## Conexión a la Red Wi-Fi eduroam
+
+Para este proyecto, se utiliza una conexión Wi-Fi a la red eduroam mediante un ESP32. El código de conexión está implementado en el archivo `eduroam.c`.
+
+#### Configuración de Credenciales
+
+```c
+#define WIFI_SSID "eduroam"
+#define EAP_IDENTITY "correo@ejemplo.cl"
+#define EAP_USERNAME "correo@ejemplo.cl"
+#define EAP_PASSWORD "contraseña"
+```
+
+#### Inicialización de Wi-Fi
+
+```c
+void wifi_init_sta(void) {
+    esp_netif_init();
+    esp_event_loop_create_default();
+    esp_netif_create_default_wifi_sta();
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    esp_wifi_init(&cfg);
+
+    esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL);
+    esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL);
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = WIFI_SSID,
+        },
+    };
+
+    esp_wifi_set_mode(WIFI_MODE_STA);
+    esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config);
+
+    esp_eap_client_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY));
+    esp_eap_client_set_username((uint8_t *)EAP_USERNAME, strlen(EAP_USERNAME));
+    esp_eap_client_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
+    esp_wifi_sta_enterprise_enable();
+
+    esp_wifi_start();
+}
+```
+#### Manejador de Eventos
+
+```c
+static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_id, void *event_data) {
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        ESP_LOGI(TAG, "¡Intentando conectar a eduroam!");
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        ESP_LOGI(TAG, "Desconectado ¡Reintentando conexión!");
+        esp_wifi_connect();
+    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
+        ip_event_got_ip_t *event = (ip_event_got_ip_t *)event_data;
+        ESP_LOGI(TAG, "¡Conectado exitosamente! Dirección IP: " IPSTR, IP2STR(&event->ip_info.ip));
+    }
+}
+```
+
+### Conexión Exitosa
+
+La siguientimagen muestra el resultado de una conexión exitosa a eduroam:
+e 
+![Conexión Exitosa a eduroam](eduroam_conexion.png)
 
 ### Funcionamiento del Sistema
 
