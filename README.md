@@ -79,7 +79,6 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
 ### Conexión Exitosa
 
 La siguientimagen muestra el resultado de una conexión exitosa a eduroam:
-e 
 ![Conexión Exitosa a eduroam](eduroam_conexion.png)
 
 ### Funcionamiento del Sistema
