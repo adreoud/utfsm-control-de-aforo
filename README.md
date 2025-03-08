@@ -1,101 +1,150 @@
-# Sistema de Control de Aforo  
+# Contador de Aforo con ESP32 y Arduino
 *Universidad Técnica Federico Santa María – Práctica Industrial*
 
-## Descripción General
+## Descripción del Proyecto
 
-Este proyecto tiene como objetivo registrar, almacenar y subir los registros de ingresos y egresos en salas de clase utilizando dos módulos que se comunican entre sí:
+Este proyecto implementa un sistema de conteo de aforo utilizando un **ESP32** y un **Arduino**. El sistema detecta la presencia de personas a través de sensores ultrasónicos, almacena registros en una tarjeta **SD** y transmite los datos a un **servidor en la nube**.
 
-- **Arduino R4 WiFi:**  
-  - Se encarga de detectar y contar los ingresos y egresos mediante dos sensores ultrasónicos (definidos como _sensor INTERIOR_ y _sensor EXTERIOR_).  
-  - Registra cada evento en un archivo de log fijo ("REG.TXT") en una tarjeta SD.  
-  - Actualiza su reloj (RTC DS1307) mediante mensajes recibidos por UART del ESP32.
+- **ESP32**: Se encarga de la conectividad WiFi, sincronización horaria mediante **NTP**, y transmisión de datos al servidor.
+- **Arduino**: Realiza la detección de personas mediante sensores ultrasónicos y almacena los registros en una tarjeta **SD**.
 
-- **ESP32 (Tarjeta de Desarrollo):**  
-  - Se conecta a la red eduroam utilizando WPA2 Enterprise (EAP PEAP).  
-  - Obtiene la hora actual desde una API (por ejemplo, worldtimeapi.org) y la envía al Arduino para sincronizar su RTC.  
-  - Recibe el archivo "REG.TXT" desde el Arduino a través de UART, lo renombra utilizando identificadores (campus, edificio, sala) y la hora actual, y lo sube a un servidor de almacenamiento en red mediante HTTP POST.
-  - Verifica la conectividad tanto a la red WiFi como al servidor (almacenamiento en red) antes de proceder con la sincronización y la transferencia de archivos.
+## Diagrama UML
 
-## Flujo de Trabajo
+El siguiente diagrama UML describe el flujo de ejecución del sistema:
 
-### Arduino (arduino_aforo.cpp)
-1. **Inicialización y Verificación:**
-   - Se configuran los identificadores (campus, edificio, número de sala).
-   - Se definen los pines de dos sensores ultrasónicos:
-     - **TRIG_PIN_INTERIOR / ECHO_PIN_INTERIOR**
-     - **TRIG_PIN_EXTERIOR / ECHO_PIN_EXTERIOR**
-   - Se inicializan el módulo RTC DS1307, la tarjeta SD y la comunicación UART (Serial1) con el ESP32.
-   - Se realiza un handshake enviando "PING" y esperando "ESP32_OK" para asegurar la comunicación.
+![Diagrama UML](uml.pdf)
 
-2. **Registro de Eventos:**
-   - Se utiliza una máquina de estados (IDLE, WAIT_FOR_INTERIOR, WAIT_FOR_EXTERIOR) para determinar correctamente el flujo de personas:
-     - **Ingreso:** Se detecta primero la activación del sensor EXTERIOR y luego la del sensor INTERIOR.
-     - **Egreso:** Se detecta primero la activación del sensor INTERIOR y luego la del sensor EXTERIOR.
-   - Cada evento se registra en "REG.TXT" en el siguiente formato:  
-     `Campus;Edificio;Numero;Contador-Ingresos;Contador-Egresos;Ingreso-Egreso;Fecha;Hora`
+## Componentes y Librerías Utilizadas
 
-3. **Sincronización y Transferencia:**
-   - El Arduino recibe por UART mensajes de hora en el formato `TIME;YYYY-MM-DD;HH:MM:SS` enviados por el ESP32 para actualizar su RTC.
-   - Dentro de una ventana de 5 segundos (por ejemplo, entre 22:00:00 y 22:00:04) se inicia el envío del archivo:
-     - Se transmite el contenido del archivo línea a línea, finalizando con "END_OF_FILE".
-     - El Arduino espera la confirmación "ACK_FILE" para eliminar el archivo y reiniciar el registro.
+### En el ESP32:
+- **WiFi**: Manejo de conexión inalámbrica.
+- **NTPClient**: Sincronización de hora con servidores NTP.
+- **ArduinoJson**: Procesamiento de datos en formato JSON.
+- **FS y SPIFFS**: Manejo de almacenamiento interno.
+- **ESPAsyncWebServer**: Servidor web para interacción con el sistema.
+- **FreeRTOS**: Gestión de tareas concurrentes.
 
-4. **Manejo de Errores:**
-   - Si falla la inicialización del RTC, la tarjeta SD o la comunicación UART, el sistema se detiene y muestra un mensaje de error.
-   - Se utilizan timeouts para evitar bloqueos durante la transferencia de datos.
+### En el Arduino:
+- **NewPing**: Manejo de sensores ultrasónicos.
+- **RTCZero**: Control del reloj en tiempo real.
+- **SD y SPI**: Manejo de almacenamiento en tarjeta SD.
+- **SoftwareSerial**: Comunicación serie con el ESP32.
 
-### ESP32 (esp32.c)
-1. **Conexión a eduroam y Configuración de Red:**
-   - Se conecta a la red eduroam utilizando WPA2 Enterprise (configurando identidad, usuario y contraseña).
-   - Se inicializa la pila TCP/IP en modo STA y se registran manejadores de eventos para gestionar reintentos y la obtención de IP.
-   - Un LED indica el estado de la conexión (encendido al obtener IP, apagado en desconexión).
+## Análisis del Flujo del Sistema
 
-2. **Sincronización de Hora:**
-   - La tarea `time_sync_task` espera a obtener conexión WiFi (con reintentos) y verifica la conectividad al servidor de almacenamiento durante al menos 10 segundos.
-   - Se realiza una solicitud HTTP GET a la API de tiempo para obtener la hora actual, la cual se formatea en `TIME;YYYY-MM-DD;HH:MM:SS` y se envía al Arduino vía UART.
-   - Se manejan errores en caso de fallos en la solicitud, asignación de memoria o parseo del JSON.
+### 1. ESP32 - Inicialización
 
-3. **Recepción y Subida del Archivo:**
-   - Al recibir el comando "UPLOAD_NOW" por UART, se inicia la tarea `file_upload_task` (con una pila aumentada a 16 KB).
-   - Se establece un protocolo de transferencia:
-     - El ESP32 envía "READY_TO_SEND" y espera la respuesta "READY_TO_RECEIVE" del Arduino.
-     - Recibe el archivo línea a línea hasta detectar "END_OF_FILE".
-     - Genera un nuevo nombre para el archivo usando los identificadores y la hora actual (por ejemplo, `SanJoaquin_A_001_YYYYMMDD_HHMMSS.TXT`).
-     - Realiza un HTTP POST para subir el archivo al servidor de almacenamiento. Si la transferencia es exitosa (HTTP 200), envía "ACK_FILE" al Arduino para que éste elimine el archivo.
-   
-4. **Manejo de Errores:**
-   - Se implementan reintentos y timeouts para la conexión WiFi y para la comunicación con el servidor.
-   - Se verifica la correcta asignación de memoria y el parseo del JSON.
-   - Si ocurre algún error en la transferencia o en la conexión, se registran los detalles mediante logs (ESP_LOG).
+1. `nvs_flash_init()`: Inicializa el almacenamiento No Volátil (**NVS**).
+2. `ESP_ERROR_CHECK()`: Verifica errores en la inicialización.
+3. `uart_init()`: Configura la comunicación **UART** con el Arduino.
+4. `led_init()`: Inicializa el **LED indicador**.
+5. `wifi_init_sta()`: Establece la conexión **WiFi**.
 
-## Compilación y Herramientas
+### 2. ESP32 - Creación de Tareas
 
-- **Arduino (arduino_aforo.cpp):**  
-  El código para Arduino se compila y sube mediante el IDE de Arduino. Asegúrate de contar con las librerías necesarias (RTClib, NewPing, SD, etc.).
+- Se crean tareas en **FreeRTOS** para manejar procesos concurrentes.
+- `xTaskCreate(time_sync_task)`: Sincroniza la hora con un servidor **NTP**.
 
-- **ESP32 (esp32.c):**  
-  Este código debe compilarse y flashearse utilizando el framework **ESP-IDF**.  
-  Para compilar y flashear, se recomienda utilizar los comandos:  
+### 3. ESP32 - Bucle Principal
 
-´´´cpp
-idf.py build idf.py flash
+- `loop()`: Monitorea eventos y espera comandos.
+- Si recibe `UPLOAD_NOW`, se inicia `file_upload_task()` para la **transferencia de archivos**.
 
-Asegúrate de configurar correctamente el entorno ESP-IDF y los parámetros de conexión.
+### 4. ESP32 - Gestión de WiFi
 
-## Requisitos del Sistema
+1. `wifi_init_sta()`: Inicializa WiFi.
+2. `event_handler(WiFi)`: Gestiona eventos de conexión.
+3. Si WiFi está conectado:
+   - Se enciende el **LED**.
+   - `wifi_connected = true`.
+4. Si se pierde la conexión, se reintenta.
 
-- **Hardware:**
-- Arduino R4 WiFi
-- ESP32 (Tarjeta de Desarrollo)
-- Sensores Ultrasónicos HC-SR04
-- Módulo SD para almacenamiento
-- Conexión a la red eduroam
-- Servidor de almacenamiento (p. ej., configurado en un servidor web)
+### 5. ESP32 - Sincronización de Hora
 
-- **Software:**
-- IDE de Arduino (para el código de Arduino)
-- ESP-IDF (para compilar y flashear el código del ESP32)
-- Librerías: RTClib, NewPing, SD, SPI, ArduinoJson (según corresponda)
+1. `time_sync_task()`: Sincroniza con servidores NTP.
+2. Si hay conexión, obtiene la hora y la envía al **Arduino**.
+3. Si falla, genera un **error** y reintenta.
+
+### 6. ESP32 - Recepción de Archivo desde Arduino
+
+1. `file_upload_task()`: Recibe datos desde el Arduino.
+2. Envía `READY_TO_SEND` y espera `READY_TO_RECEIVE`.
+3. Si la respuesta es positiva:
+   - Recibe el archivo línea por línea hasta `END_OF_FILE`.
+   - **Sube el archivo** al servidor.
+4. Si la subida es **exitosa**, envía `ACK_FILE`.
+
+### 7. ESP32 - Subida a Servidor
+
+1. `check_storage_connectivity()`: Verifica conexión con el servidor.
+2. Si responde `HTTP 200`, la subida se realiza.
+3. Si hay error, se reporta y se **reintenta**.
+
+### 8. Arduino - Inicialización
+
+1. `setup()`: Configuración inicial.
+2. Verifica **RTC, SD y comunicación con ESP32**.
+3. Si todo está correcto:
+   - `systemReady = true`.
+4. Muestra mensaje de **bienvenida**.
+
+### 9. Arduino - Bucle Principal
+
+1. `loop()`: Se ejecuta continuamente.
+2. Recibe la **hora desde el ESP32**.
+3. Si es hora de enviar logs:
+   - Llama a `enviarArchivoESP32()`.
+
+### 10. Arduino - Máquina de Estados - Detección
+
+1. Lee sensores `sonarInterior.ping_cm()` y `sonarExterior.ping_cm()`.
+2. Si está en estado **IDLE**, determina cuál sensor se activa primero:
+   - **EXTERIOR activado**: entra en `WAIT_FOR_INTERIOR`.
+   - **INTERIOR activado**: entra en `WAIT_FOR_EXTERIOR`.
+3. Si ambos sensores se activan en orden correcto:
+   - **Registra entrada/salida**.
+
+### 11. Arduino - Interacción con ESP32
+
+1. Envía `READY_TO_SEND` y espera `READY_TO_RECEIVE`.
+2. Envía **datos línea por línea**.
+3. Si recibe `ACK_FILE`, **borra el archivo** de la SD.
+
+## Instalación y Configuración
+
+### Requisitos
+- **ESP32 DevKit v1**
+- **Arduino Uno**
+- **Sensores ultrasónicos HC-SR04**
+- **Módulo RTC (opcional)**
+- **Tarjeta microSD y lector SD**
+- **Conexión WiFi activa**
+
+### Pasos para la Instalación
+1. **Clonar el repositorio**:
+   ```bash
+   git clone https://github.com/tu_usuario/contador-aforo.git
+   ```
+2. **Compilar y cargar código en Arduino**:
+   - Abrir `arduino_aforo.cpp` en el IDE de Arduino.
+   - Instalar librerías necesarias.
+   - Compilar y subir código al Arduino.
+3. **Compilar y cargar código en ESP32**:
+   - Abrir `esp32.c` en PlatformIO o Arduino IDE.
+   - Configurar credenciales WiFi.
+   - Subir código al ESP32.
+
+## Conclusión
+
+Este sistema permite la detección de aforo con sensores ultrasónicos en un **Arduino**, que almacena registros en una **SD** y los transmite al **ESP32** para su subida a un servidor en la nube. 
+
+El **ESP32** maneja la conexión **WiFi**, la sincronización de hora y la transmisión de datos. 
+
+Se han definido detalladamente todas las etapas del proceso reflejadas en el diagrama UML, asegurando que cada componente cumple con su función en la arquitectura del sistema.
+
+---
+**Autor:** Eduardo Sebastián Palma Olave
+**Repositorio:** [GitHub](https://github.com/adreoud/utfsm-control-de-aforo)
 
 ## Conclusiones
 
